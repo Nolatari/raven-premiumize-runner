@@ -1,0 +1,32 @@
+from fastapi import FastAPI, Request, Header
+from fastapi.responses import JSONResponse
+import os, json, time, requests
+
+app = FastAPI()
+
+PM_CUSTOMER_ID = os.getenv("PM_CUSTOMER_ID")
+PM_PIN = os.getenv("PM_PIN")
+RAVEN_TOKEN = os.getenv("RAVEN_TOKEN")
+PM_FOLDER_ID = os.getenv("PM_FOLDER_ID", "")
+
+@app.get("/health")
+def health():
+    return {"ok": True, "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+
+@app.post("/save")
+async def save_log(request: Request, authorization: str = Header(None)):
+    if authorization != f"Bearer {RAVEN_TOKEN}":
+        return JSONResponse(content={"error": "Unauthorized"}, status_code=401)
+    data = await request.json()
+    ts = time.strftime("%Y%m%d_%H%M%S", time.gmtime())
+    filename = f"log_{ts}.json"
+
+    payload = {
+        "apikey": PM_PIN,
+        "customer_id": PM_CUSTOMER_ID,
+        "folder_id": PM_FOLDER_ID,
+        "filename": filename,
+        "data": json.dumps(data)
+    }
+    resp = requests.post("https://www.premiumize.me/api/item/create", data=payload)
+    return {"ok": True, "uploaded": filename, "pm_response": resp.json()}
