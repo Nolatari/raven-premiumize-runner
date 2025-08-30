@@ -5,4 +5,5 @@ app = FastAPI()
 
 @app.get("/ping")
 def ping():
-    return {"ok": True, "now": datetime.utcnow().isoformat()}
+    return {"ok": True, "now": datetime.utcnow().isoformat() + "Z"}
+
